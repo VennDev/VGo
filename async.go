@@ -1,51 +1,33 @@
 package vgo
 
-type AsyncResult struct {
-	deferred *Deferred
+type Async struct {
+	callback func() interface{}
 }
 
 /**
  * Async creates a new Deferred instance and runs the callback function in a new goroutine.
- * The Deferred instance is returned as an AsyncResult instance.
- * @param callback The callback function to run asynchronously.
- * @return An AsyncResult instance.
- * @example
- * async := Async(func() interface{} {
- *    return "Hello, World!"
- * })
+ * @return *Derrered The Deferred instance.
  */
-func Async(callback func() interface{}) *AsyncResult {
-	deferred := NewDeferred()
-	go func() {
-		deferred.callback <- callback
-		close(deferred.callback)
-	}()
-	deferred.Run()
-	return &AsyncResult{
-		deferred: deferred,
+func (p *Async) Run() *Deferred {
+	return &Deferred{
+		callback: p.callback,
 	}
 }
 
 /**
  * Await waits for the Deferred instance to finish and returns the result.
  * @param value The Deferred instance to wait for.
- * @return The result of the Deferred instance.
- * @example
- * async := Async(func() interface{} {
- *   return "Hello, World!"
- * })
- * result := Await(async)
- * fmt.Println(result) // Output: Hello, World!
+ * @return interface{} The result of the Deferred instance.
  */
 func Await(value interface{}) interface{} {
 	switch v := value.(type) {
-	case *AsyncResult:
-		return <-v.deferred.result
+	case *Async:
+		return v.Run().Run().Await()
 	case *Deferred:
-		return <-v.result
+		return v.Run().Await()
 	case func() interface{}:
 		return v()
 	default:
-		panic("Await expects an Async instance or a Deferred instance!")
+		panic("Await expects an Async function, callback or a Deferred instance!")
 	}
 }
