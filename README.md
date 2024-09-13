@@ -61,6 +61,7 @@ func TestDeferredWithAny(t *testing.T) {
 		}
 		deferred1.Close()
 	}()
+	deferred1.Run()
 
 	deferred2 := NewDeferred()
 	go func() {
@@ -69,6 +70,7 @@ func TestDeferredWithAny(t *testing.T) {
 		}
 		deferred2.Close()
 	}()
+	deferred2.Run()
 
 	async := Any(deferred1, deferred2)
 	result := Await(async)
