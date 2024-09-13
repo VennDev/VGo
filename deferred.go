@@ -58,11 +58,10 @@ func (p *Deferred) Close() {
  * result := Await(async)
  * fmt.Println(result) // Output: 10
  */
-
 func Any(values ...*Deferred) *Deferred {
 	deferred := NewDeferred()
 	go func() {
-		results := make(chan interface{})
+		results := make(chan interface{}, len(values))
 		for _, value := range values {
 			go func(d *Deferred) {
 				result := <-d.result
@@ -76,7 +75,7 @@ func Any(values ...*Deferred) *Deferred {
 				break
 			}
 		}
-		close(deferred.result)
+		close(results)
 	}()
 	return deferred
 }
