@@ -1,110 +1,74 @@
 package vgo
 
 type Deferred struct {
-	callback chan func() interface{}
-	result   chan interface{}
+	callback func() interface{}
 }
 
-func NewDeferred() *Deferred {
-	return &Deferred{
-		callback: make(chan func() interface{}),
-		result:   make(chan interface{}),
-	}
+type ResultDeferred struct {
+	result chan interface{}
 }
 
 /**
- * Run starts the Deferred instance.
- * @example
- * deferred := NewDeferred()
- * go func() {
- *  deferred.callback <- func() interface{} {
- *  return "Hello, World!"
- * }
- * deferred.Close()
- * }()
- * deferred.Run()
- * result := <-deferred.result
- * fmt.Println(result) // Output: Hello, World!
+ * Deferred creates a new Deferred instance and runs the callback function in a new goroutine.
+ * @return *Derrered The Deferred instance.
  */
-func (p *Deferred) Run() {
+func (p *Deferred) Run() *ResultDeferred {
+	result := make(chan interface{})
 	go func() {
-		for fn := range p.callback {
-			p.result <- fn()
-		}
-		close(p.result)
+		result <- p.callback()
 	}()
+	return &ResultDeferred{result}
 }
 
 /**
- * Close closes the Deferred instance.
+ * Await waits for the Deferred instance to finish and returns the result.
+ * @return interface{} The result of the Deferred instance.
  */
-func (p *Deferred) Close() {
-	close(p.callback)
+func (p *Deferred) Await() interface{} {
+	return p.Run().Await()
 }
 
-/*
- * Create one new Deferred instance for each value in the values array.
- * The first Deferred instance to finish will return its result.
- * @param values The Deferred instances to wait for.
- * @return A new Deferred instance.
- * @example
- * deferred1 := NewDeferred(func() interface{} {
- *  return 10
- * })
- * deferred2 := NewDeferred(func() interface{} {
- *  return 20
- * })
- * async := Any(deferred1, deferred2)
- * result := Await(async)
- * fmt.Println(result) // Output: 10
+/**
+ * Await waits for the Deferred instance to finish and returns the result.
+ * @return interface{} The result of the Deferred instance.
+ * @deprecated Use Run().Await() instead.
  */
-func Any(values ...*Deferred) *Deferred {
-	deferred := NewDeferred()
+func (p *ResultDeferred) Await() interface{} {
+	return <-p.result
+}
+
+/**
+ * Then waits for the Deferred instance to finish and returns the result.
+ * @param callbacks The callback functions to run after the Deferred instance is finished.
+ * @return interface{} The result of the Deferred instance.
+ */
+func (p *Deferred) All(callbacks ...func() interface{}) *ResultDeferred {
+	result := make(chan interface{})
 	go func() {
-		results := make(chan interface{}, len(values))
-		for _, value := range values {
-			go func(d *Deferred) {
-				result := <-d.result
-				results <- result
-			}(value)
+		var results []interface{}
+		for _, callback := range callbacks {
+			results = append(results, callback())
 		}
-		for range values {
-			result := <-results
-			if result != nil {
-				deferred.result <- result
-				break
+		result <- results
+	}()
+	return &ResultDeferred{result}
+}
+
+/**
+ * Any waits for the Deferred instance to finish and returns the result.
+ * @param callbacks The callback functions to run after the Deferred instance is finished.
+ * @return interface{} The result of the Deferred instance.
+ */
+func (p *Deferred) Any(callbacks ...func() interface{}) *ResultDeferred {
+	result := make(chan interface{})
+	go func() {
+		for _, callback := range callbacks {
+			if callback() != nil {
+				result <- callback()
+				return
 			}
 		}
-		close(results)
+		result <- nil
 	}()
-	return deferred
-}
-
-/**
- * Create one new Deferred instance for each value in the values array.
- * All Deferred instances must finish before the new Deferred instance returns.
- * @param values The Deferred instances to wait for.
- * @return A new Deferred instance.
- * @example
- * deferred1 := NewDeferred(func() interface{} {
- *  return 10
- * })
- * deferred2 := NewDeferred(func() interface{} {
- *  return 20
- * })
- * async := All(deferred1, deferred2)
- * result := Await(async)
- * fmt.Println(result) // Output: [10, 20]
- */
-func All(values ...*Deferred) *Deferred {
-	deferred := NewDeferred()
-	go func() {
-		results := make([]interface{}, len(values))
-		for i, value := range values {
-			results[i] = <-value.result
-		}
-		deferred.result <- results
-		close(deferred.result)
-	}()
-	return deferred
+	return &ResultDeferred{result}
 }
