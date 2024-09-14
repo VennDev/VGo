@@ -26,7 +26,8 @@ func Await(value interface{}) interface{} {
 	case *Deferred:
 		return v.Run().Await()
 	case func() interface{}:
-		return v()
+		// Create a new Async instance and run the callback function.
+		return (&Async{callback: v}).Run().Run().Await()
 	default:
 		panic("Await expects an Async function, callback or a Deferred instance!")
 	}
