@@ -8,7 +8,7 @@ import (
 
 func doAsync() *Async {
 	return &Async{
-		callback: func() interface{} {
+		Callback: func() interface{} {
 			return 30
 		},
 	}
@@ -22,7 +22,7 @@ func TestAsync(t *testing.T) {
 
 func TestDeferred(t *testing.T) {
 	deferred := &Deferred{
-		callback: func() interface{} {
+		Callback: func() interface{} {
 			return 50
 		},
 	}

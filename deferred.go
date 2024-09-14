@@ -1,7 +1,7 @@
 package vgo
 
 type Deferred struct {
-	callback func() interface{}
+	Callback func() interface{}
 }
 
 type ResultDeferred struct {
@@ -15,7 +15,7 @@ type ResultDeferred struct {
 func (p *Deferred) Run() *ResultDeferred {
 	result := make(chan interface{})
 	go func() {
-		result <- p.callback()
+		result <- p.Callback()
 	}()
 	return &ResultDeferred{result}
 }

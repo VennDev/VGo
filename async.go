@@ -1,7 +1,7 @@
 package vgo
 
 type Async struct {
-	callback func() interface{}
+	Callback func() interface{}
 }
 
 /**
@@ -10,7 +10,7 @@ type Async struct {
  */
 func (p *Async) Run() *Deferred {
 	return &Deferred{
-		callback: p.callback,
+		Callback: p.Callback,
 	}
 }
 
@@ -27,7 +27,7 @@ func Await(value interface{}) interface{} {
 		return v.Run().Await()
 	case func() interface{}:
 		// Create a new Async instance and run the callback function.
-		return (&Async{callback: v}).Run().Run().Await()
+		return (&Async{Callback: v}).Run().Run().Await()
 	default:
 		panic("Await expects an Async function, callback or a Deferred instance!")
 	}
