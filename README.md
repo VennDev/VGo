@@ -1,6 +1,9 @@
 # VGo
 The library helps you have the async-await syntax in Go that runs on goroutines.
 
+# Install
+`go get github.com/VennDev/VGo`
+
 # Example
 ```go
 package vgo
